@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Flower2, Menu, ShoppingBag, X } from "lucide-react";
 import { useCart } from "@/lib/cart";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 
 const NAV = [
   { to: "/catalog", label: "Каталог" },
@@ -28,10 +30,14 @@ export function Header() {
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5">
-        <Link to="/" className="flex items-center gap-2">
-          <Flower2 className="h-5 w-5 text-primary" strokeWidth={1.5} />
-          <span className="font-display text-2xl leading-none">Тюльпаны Москва</span>
-        </Link>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Link to="/" className="flex items-center gap-2">
+            <Flower2 className="h-5 w-5 text-primary" strokeWidth={1.5} />
+            <span className="font-display text-2xl leading-none">Тюльпаны Москва</span>
+          </Link>
+        </div>
+
 
         <nav className="hidden items-center gap-7 text-sm md:flex">
           {NAV.map((item) => (
