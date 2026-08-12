@@ -30,6 +30,34 @@ function ProductsPage() {
   const remove = useServerFn(deleteProduct);
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function uploadPhoto(file: File): Promise<string | null> {
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Файл больше 8 МБ");
+      return null;
+    }
+    setUploading(true);
+    try {
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("product-photos")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (error) throw error;
+      const { data, error: signError } = await supabase.storage
+        .from("product-photos")
+        .createSignedUrl(path, 60 * 60 * 24 * 3650);
+      if (signError || !data) throw signError ?? new Error("Не удалось получить ссылку");
+      toast.success("Фото загружено");
+      return data.signedUrl;
+    } catch (error) {
+      toast.error((error as Error).message || "Не удалось загрузить фото");
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "products"],
