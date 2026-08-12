@@ -51,7 +51,7 @@ function CartPage() {
     delivery_slot: SLOTS[0]!,
     comment: "",
   });
-  const [wrap, setWrap] = useState(WRAPS[0]!);
+  const [wrap, setWrap] = useState<string>(WRAPS[0]!);
   const [wrapNote, setWrapNote] = useState("");
 
   const shipping = deliveryCost(subtotal);
