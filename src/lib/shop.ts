@@ -2,6 +2,10 @@ import pink from "@/assets/bouquet-pink.jpg";
 import white from "@/assets/bouquet-white.jpg";
 import mix from "@/assets/bouquet-mix.jpg";
 import hero from "@/assets/tulips-hero.jpg";
+import hatbox from "@/assets/hatbox.jpg.asset.json";
+import basket from "@/assets/basket.jpg.asset.json";
+import singlePink from "@/assets/single-pink.jpg.asset.json";
+import singleWhite from "@/assets/single-white.jpg.asset.json";
 
 export type ProductCategory = "single" | "composition" | "bouquet";
 
@@ -45,8 +49,16 @@ export const STATUS_LABELS: Record<string, string> = {
 
 export const heroImage = hero;
 
-export function productImage(product: Pick<Product, "image_url" | "color">): string {
+export function productImage(
+  product: Pick<Product, "image_url" | "color"> & Partial<Pick<Product, "category" | "slug">>,
+): string {
   if (product.image_url) return product.image_url;
+  if (product.slug === "kompoziciya-v-korobke") return hatbox.url;
+  if (product.slug === "kompoziciya-v-korzine") return basket.url;
+  if (product.category === "composition") return basket.url;
+  if (product.category === "single") {
+    return product.color === "белый" ? singleWhite.url : singlePink.url;
+  }
   switch (product.color) {
     case "белый":
       return white;
