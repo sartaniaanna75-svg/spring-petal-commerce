@@ -106,6 +106,7 @@ export type Database = {
       }
       products: {
         Row: {
+          category: string
           color: string
           composition: string
           created_at: string
@@ -120,6 +121,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string
           color?: string
           composition?: string
           created_at?: string
@@ -134,6 +136,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string
           color?: string
           composition?: string
           created_at?: string

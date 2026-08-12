@@ -117,7 +117,7 @@ export const listAllProducts = createServerFn({ method: "GET" })
     await assertAdmin(context);
     const { data, error } = await context.supabase
       .from("products")
-      .select("id, slug, title, description, composition, stems, color, price, image_url, published")
+      .select("id, slug, title, description, composition, stems, color, price, image_url, published, category")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return (data ?? []) as Product[];
@@ -139,6 +139,7 @@ const productSchema = z.object({
   price: z.number().int().min(0).max(1000000),
   image_url: z.string().trim().max(600).default(""),
   published: z.boolean().default(true),
+  category: z.enum(["single", "composition", "bouquet"]).default("bouquet"),
 });
 
 export const saveProduct = createServerFn({ method: "POST" })

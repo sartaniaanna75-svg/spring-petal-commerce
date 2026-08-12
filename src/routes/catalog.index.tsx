@@ -2,17 +2,28 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { listProducts } from "@/lib/shop.functions";
 import { ProductCard } from "@/components/ProductCard";
+import { CATEGORIES, type ProductCategory } from "@/lib/shop";
 
 const productsQuery = queryOptions({
   queryKey: ["products", "published"],
   queryFn: () => listProducts(),
 });
 
-type Search = { color?: string | undefined; sort?: "price-asc" | "price-desc" | "stems" | undefined };
+type Search = {
+  color?: string | undefined;
+  category?: ProductCategory | undefined;
+  sort?: "price-asc" | "price-desc" | "stems" | undefined;
+};
+
+const CATEGORY_VALUES = CATEGORIES.map((item) => item.value) as string[];
 
 export const Route = createFileRoute("/catalog/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     color: typeof search["color"] === "string" ? search["color"] : undefined,
+    category:
+      typeof search["category"] === "string" && CATEGORY_VALUES.includes(search["category"])
+        ? (search["category"] as ProductCategory)
+        : undefined,
     sort:
       search["sort"] === "price-desc" || search["sort"] === "stems"
         ? search["sort"]
@@ -22,12 +33,13 @@ export const Route = createFileRoute("/catalog/")({
   }),
   head: () => ({
     meta: [
-      { title: "Каталог букетов тюльпанов — Москва" },
+      { title: "Каталог тюльпанов — штучно, букеты, композиции" },
       {
         name: "description",
-        content: "Букеты тюльпанов от 15 до 101 стебля: розовые, белые, красные, сиреневые и микс.",
+        content:
+          "Тюльпаны поштучно, авторские букеты и композиции в коробках и корзинах. Доставка по Москве за 2 часа.",
       },
-      { property: "og:title", content: "Каталог букетов тюльпанов — Москва" },
+      { property: "og:title", content: "Каталог тюльпанов — штучно, букеты, композиции" },
       { property: "og:description", content: "Свежая срезка, доставка по Москве за 2 часа." },
     ],
   }),
@@ -41,16 +53,18 @@ export const Route = createFileRoute("/catalog/")({
 
 function CatalogPage() {
   const { data: products } = useSuspenseQuery(productsQuery);
-  const { color, sort } = Route.useSearch();
+  const { color, sort, category } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
-  const colors = Array.from(new Set(products.map((product) => product.color)));
-  let visible = color ? products.filter((product) => product.color === color) : products;
+  const byCategory = category ? products.filter((product) => product.category === category) : products;
+  const colors = Array.from(new Set(byCategory.map((product) => product.color)));
+  let visible = color ? byCategory.filter((product) => product.color === color) : byCategory;
   visible = [...visible].sort((a, b) => {
     if (sort === "price-desc") return b.price - a.price;
     if (sort === "stems") return b.stems - a.stems;
     return a.price - b.price;
   });
+
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-14">
@@ -59,7 +73,31 @@ function CatalogPage() {
         Всё, что сегодня в срезке. Количество стеблей можно изменить в комментарии к заказу.
       </p>
 
-      <div className="mt-10 flex flex-wrap items-center gap-3">
+      <div className="mt-8 flex flex-wrap gap-2 border-b border-foreground/10 pb-1">
+        {[{ value: undefined, label: "Всё" }, ...CATEGORIES.map((c) => ({ value: c.value, label: c.label }))].map(
+          (tab) => (
+            <button
+              key={tab.label}
+              type="button"
+              onClick={() =>
+                navigate({
+                  search: (prev: Search) => ({ ...prev, category: tab.value, color: undefined }),
+                })
+              }
+              className={`-mb-px border-b-2 px-4 pb-3 pt-2 font-display text-xl transition-colors ${
+                category === tab.value
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ),
+        )}
+      </div>
+
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+
         <button
           type="button"
           onClick={() => navigate({ search: (prev: Search) => ({ ...prev, color: undefined }) })}

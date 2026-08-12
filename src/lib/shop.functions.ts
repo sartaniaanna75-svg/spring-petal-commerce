@@ -22,7 +22,7 @@ function publicClient() {
   });
 }
 
-const PRODUCT_COLUMNS = "id, slug, title, description, composition, stems, color, price, image_url, published";
+const PRODUCT_COLUMNS = "id, slug, title, description, composition, stems, color, price, image_url, published, category";
 
 export const listProducts = createServerFn({ method: "GET" }).handler(async (): Promise<Product[]> => {
   const { data, error } = await publicClient()
