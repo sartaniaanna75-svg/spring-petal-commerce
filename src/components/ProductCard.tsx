@@ -5,8 +5,9 @@ import { useCart } from "@/lib/cart";
 import { formatPrice, productImage, type Product } from "@/lib/shop";
 
 export function ProductCard({ product, tall = false }: { product: Product; tall?: boolean }) {
-  const { add } = useCart();
+  const { add, items } = useCart();
   const [qty, setQty] = useState(1);
+  const inCart = items.find((item) => item.productId === product.id)?.qty ?? 0;
 
   return (
     <article className="group flex flex-col">
@@ -38,6 +39,10 @@ export function ProductCard({ product, tall = false }: { product: Product; tall?
         </div>
         <p className="shrink-0 pt-1 font-display text-xl">{formatPrice(product.price)}</p>
       </div>
+
+      {inCart > 0 && (
+        <p className="mt-2 text-sm text-primary">Уже в корзине: {inCart} шт</p>
+      )}
 
       <div className="mt-4 flex items-center gap-3">
         <div className="flex h-11 shrink-0 items-center rounded-full border border-foreground/15">
