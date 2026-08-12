@@ -3,6 +3,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Flower2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -62,10 +64,14 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-cream px-5 py-16">
       <div className="w-full max-w-sm rounded-[2rem] bg-card p-8">
-        <Link to="/" className="flex items-center gap-2">
-          <Flower2 className="h-5 w-5 text-primary" strokeWidth={1.5} />
-          <span className="font-display text-2xl">Тюльпаны Москва</span>
-        </Link>
+        <div className="flex items-center justify-between gap-3">
+          <Link to="/" className="flex items-center gap-2">
+            <Flower2 className="h-5 w-5 text-primary" strokeWidth={1.5} />
+            <span className="font-display text-2xl">Тюльпаны Москва</span>
+          </Link>
+          <ThemeToggle />
+        </div>
+
         <h1 className="mt-6 font-display text-3xl">
           {mode === "signin" ? "Вход в админку" : "Регистрация сотрудника"}
         </h1>
