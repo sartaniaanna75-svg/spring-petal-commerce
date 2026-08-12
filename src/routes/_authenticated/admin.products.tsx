@@ -108,11 +108,43 @@ function ProductsPage() {
               ))}
             </select>
           </label>
-          <Text
-            label="Ссылка на фото (необязательно)"
-            value={draft.image_url}
-            onChange={(v) => setDraft({ ...draft, image_url: v })}
-          />
+          <div className="text-sm">
+            <span className="text-muted-foreground">Фото букета</span>
+            <div className="mt-1 flex items-center gap-3">
+              {draft.image_url && (
+                <img
+                  src={draft.image_url}
+                  alt="Превью"
+                  className="h-14 w-14 rounded-2xl object-cover"
+                />
+              )}
+              <label className="inline-flex h-11 cursor-pointer items-center rounded-full border border-border px-5 text-sm hover:border-primary">
+                {uploading ? "Загружаем…" : draft.image_url ? "Заменить фото" : "Загрузить фото"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (!file) return;
+                    const url = await uploadPhoto(file);
+                    if (url) setDraft((prev) => (prev ? { ...prev, image_url: url } : prev));
+                  }}
+                />
+              </label>
+              {draft.image_url && (
+                <button
+                  type="button"
+                  onClick={() => setDraft({ ...draft, image_url: "" })}
+                  className="text-sm text-muted-foreground hover:text-destructive"
+                >
+                  Убрать
+                </button>
+              )}
+            </div>
+          </div>
           <label className="text-sm md:col-span-2">
             <span className="text-muted-foreground">Описание</span>
             <textarea
