@@ -1,10 +1,12 @@
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useCart } from "@/lib/cart";
 import { formatPrice, productImage, type Product } from "@/lib/shop";
 
 export function ProductCard({ product, tall = false }: { product: Product; tall?: boolean }) {
   const { add } = useCart();
+  const [qty, setQty] = useState(1);
 
   return (
     <article className="group flex flex-col">
@@ -37,16 +39,41 @@ export function ProductCard({ product, tall = false }: { product: Product; tall?
         <p className="shrink-0 pt-1 font-display text-xl">{formatPrice(product.price)}</p>
       </div>
 
-      <button
-        type="button"
-        onClick={() => {
-          add({ productId: product.id, slug: product.slug, title: product.title, price: product.price });
-          toast.success(`«${product.title}» в корзине`);
-        }}
-        className="mt-4 h-11 rounded-full border border-foreground/15 text-sm transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
-      >
-        В корзину
-      </button>
+      <div className="mt-4 flex items-center gap-3">
+        <div className="flex h-11 shrink-0 items-center rounded-full border border-foreground/15">
+          <button
+            type="button"
+            onClick={() => setQty((value) => Math.max(1, value - 1))}
+            className="h-11 w-10 text-lg"
+            aria-label={`Меньше: ${product.title}`}
+          >
+            −
+          </button>
+          <span className="w-6 text-center text-sm">{qty}</span>
+          <button
+            type="button"
+            onClick={() => setQty((value) => Math.min(20, value + 1))}
+            className="h-11 w-10 text-lg"
+            aria-label={`Больше: ${product.title}`}
+          >
+            +
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            add(
+              { productId: product.id, slug: product.slug, title: product.title, price: product.price },
+              qty,
+            );
+            toast.success(`«${product.title}» в корзине — ${qty} шт`);
+            setQty(1);
+          }}
+          className="h-11 flex-1 rounded-full border border-foreground/15 text-sm transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
+        >
+          В корзину
+        </button>
+      </div>
     </article>
   );
 }
