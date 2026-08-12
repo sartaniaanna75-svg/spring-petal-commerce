@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { deleteProduct, listAllProducts, saveProduct } from "@/lib/admin.functions";
 import { COLORS, formatPrice, productImage, type Product } from "@/lib/shop";
 
