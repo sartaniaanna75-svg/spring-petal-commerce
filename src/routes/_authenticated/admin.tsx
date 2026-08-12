@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Flower2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { claimAdmin, getAdminStatus } from "@/lib/admin.functions";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -42,10 +44,12 @@ function AdminLayout() {
     <div className="min-h-screen bg-cream">
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-5 py-4">
+          <ThemeToggle />
           <Link to="/" className="flex items-center gap-2">
             <Flower2 className="h-5 w-5 text-primary" strokeWidth={1.5} />
             <span className="font-display text-xl">Админка</span>
           </Link>
+
           <nav className="flex gap-4 text-sm">
             <Link
               to="/admin"
