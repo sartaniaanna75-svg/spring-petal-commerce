@@ -20,13 +20,21 @@ export const Route = createFileRoute("/cart")({
   component: CartPage,
 });
 
+const WRAPS = [
+  "Крафт-бумага, льняная лента",
+  "Матовая плёнка, пастель",
+  "Прозрачная плёнка",
+  "Фетр, нежно-розовый",
+  "Без упаковки, только лента",
+] as const;
+
 const formSchema = z.object({
   customer_name: z.string().trim().min(2, "Укажите имя").max(100),
   phone: z.string().trim().min(6, "Укажите телефон").max(30),
   address: z.string().trim().min(5, "Укажите адрес доставки").max(300),
   delivery_date: z.string().trim().max(20),
   delivery_slot: z.string().trim().max(60),
-  comment: z.string().trim().max(1000),
+  comment: z.string().trim().max(1400),
 });
 
 function CartPage() {
@@ -43,13 +51,22 @@ function CartPage() {
     delivery_slot: SLOTS[0]!,
     comment: "",
   });
+  const [wrap, setWrap] = useState<string>(WRAPS[0]!);
+  const [wrapNote, setWrapNote] = useState("");
 
   const shipping = deliveryCost(subtotal);
   const total = subtotal + shipping;
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    const parsed = formSchema.safeParse(form);
+    const extras = [
+      `Упаковка: ${wrap}`,
+      wrapNote.trim() ? `Пожелания к оформлению: ${wrapNote.trim()}` : "",
+    ].filter(Boolean).join("; ");
+    const parsed = formSchema.safeParse({
+      ...form,
+      comment: [form.comment.trim(), extras].filter(Boolean).join(". "),
+    });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message ?? "Проверьте поля");
       return;
@@ -225,6 +242,32 @@ function CartPage() {
                 maxLength={1000}
                 onChange={(event) => setForm({ ...form, comment: event.target.value })}
                 rows={3}
+                className="mt-1 w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm outline-none focus:border-primary"
+              />
+            </label>
+
+            <label className="text-sm">
+              <span className="text-muted-foreground">Упаковка</span>
+              <select
+                value={wrap}
+                onChange={(event) => setWrap(event.target.value)}
+                className="mt-1 h-12 w-full rounded-2xl border border-border bg-card px-4 text-sm outline-none focus:border-primary"
+              >
+                {WRAPS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm">
+              <span className="text-muted-foreground">Пожелания к оформлению</span>
+              <textarea
+                value={wrapNote}
+                maxLength={300}
+                onChange={(event) => setWrapNote(event.target.value)}
+                rows={2}
+                placeholder="Цвет ленты, без упаковки, сюрприз-доставка, позвонить заранее…"
                 className="mt-1 w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm outline-none focus:border-primary"
               />
             </label>
