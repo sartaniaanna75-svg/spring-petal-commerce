@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { deleteProduct, listAllProducts, saveProduct } from "@/lib/admin.functions";
 import { COLORS, formatPrice, productImage, type Product } from "@/lib/shop";
 
@@ -30,6 +31,34 @@ function ProductsPage() {
   const remove = useServerFn(deleteProduct);
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function uploadPhoto(file: File): Promise<string | null> {
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Файл больше 8 МБ");
+      return null;
+    }
+    setUploading(true);
+    try {
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("product-photos")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (error) throw error;
+      const { data, error: signError } = await supabase.storage
+        .from("product-photos")
+        .createSignedUrl(path, 60 * 60 * 24 * 3650);
+      if (signError || !data) throw signError ?? new Error("Не удалось получить ссылку");
+      toast.success("Фото загружено");
+      return data.signedUrl;
+    } catch (error) {
+      toast.error((error as Error).message || "Не удалось загрузить фото");
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "products"],
@@ -108,11 +137,43 @@ function ProductsPage() {
               ))}
             </select>
           </label>
-          <Text
-            label="Ссылка на фото (необязательно)"
-            value={draft.image_url}
-            onChange={(v) => setDraft({ ...draft, image_url: v })}
-          />
+          <div className="text-sm">
+            <span className="text-muted-foreground">Фото букета</span>
+            <div className="mt-1 flex items-center gap-3">
+              {draft.image_url && (
+                <img
+                  src={draft.image_url}
+                  alt="Превью"
+                  className="h-14 w-14 rounded-2xl object-cover"
+                />
+              )}
+              <label className="inline-flex h-11 cursor-pointer items-center rounded-full border border-border px-5 text-sm hover:border-primary">
+                {uploading ? "Загружаем…" : draft.image_url ? "Заменить фото" : "Загрузить фото"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (!file) return;
+                    const url = await uploadPhoto(file);
+                    if (url) setDraft((prev) => (prev ? { ...prev, image_url: url } : prev));
+                  }}
+                />
+              </label>
+              {draft.image_url && (
+                <button
+                  type="button"
+                  onClick={() => setDraft({ ...draft, image_url: "" })}
+                  className="text-sm text-muted-foreground hover:text-destructive"
+                >
+                  Убрать
+                </button>
+              )}
+            </div>
+          </div>
           <label className="text-sm md:col-span-2">
             <span className="text-muted-foreground">Описание</span>
             <textarea

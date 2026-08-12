@@ -1,0 +1,2 @@
+CREATE POLICY "Admins manage product photos" ON storage.objects FOR ALL TO authenticated USING (bucket_id = 'product-photos' AND public.has_role(auth.uid(), 'admin')) WITH CHECK (bucket_id = 'product-photos' AND public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Anyone can read product photos" ON storage.objects FOR SELECT TO anon, authenticated USING (bucket_id = 'product-photos');
