@@ -8,9 +8,9 @@ const productsQuery = queryOptions({
   queryFn: () => listProducts(),
 });
 
-type Search = { color?: string; sort?: "price-asc" | "price-desc" | "stems" };
+type Search = { color?: string | undefined; sort?: "price-asc" | "price-desc" | "stems" | undefined };
 
-export const Route = createFileRoute("/catalog")({
+export const Route = createFileRoute("/catalog/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     color: typeof search["color"] === "string" ? search["color"] : undefined,
     sort:
@@ -62,7 +62,7 @@ function CatalogPage() {
       <div className="mt-10 flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => navigate({ search: (prev) => ({ ...prev, color: undefined }) })}
+          onClick={() => navigate({ search: (prev: Search) => ({ ...prev, color: undefined }) })}
           className={`rounded-full border px-5 py-2 text-sm transition-colors ${
             !color ? "border-primary bg-primary text-primary-foreground" : "border-foreground/15"
           }`}
@@ -73,7 +73,7 @@ function CatalogPage() {
           <button
             key={item}
             type="button"
-            onClick={() => navigate({ search: (prev) => ({ ...prev, color: item }) })}
+            onClick={() => navigate({ search: (prev: Search) => ({ ...prev, color: item }) })}
             className={`rounded-full border px-5 py-2 text-sm transition-colors ${
               color === item ? "border-primary bg-primary text-primary-foreground" : "border-foreground/15"
             }`}
@@ -85,7 +85,7 @@ function CatalogPage() {
         <select
           value={sort ?? "price-asc"}
           onChange={(event) =>
-            navigate({ search: (prev) => ({ ...prev, sort: event.target.value as Search["sort"] }) })
+            navigate({ search: (prev: Search) => ({ ...prev, sort: event.target.value as Search["sort"] }) })
           }
           className="ml-auto h-10 rounded-full border border-foreground/15 bg-card px-4 text-sm"
         >
