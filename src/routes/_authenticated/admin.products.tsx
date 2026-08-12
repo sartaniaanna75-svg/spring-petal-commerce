@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { deleteProduct, listAllProducts, saveProduct } from "@/lib/admin.functions";
-import { COLORS, formatPrice, productImage, type Product } from "@/lib/shop";
+import { CATEGORIES, COLORS, categoryLabel, formatPrice, productImage, type Product } from "@/lib/shop";
 
 export const Route = createFileRoute("/_authenticated/admin/products")({
   component: ProductsPage,
@@ -23,6 +23,7 @@ const EMPTY: Draft = {
   price: 3900,
   image_url: "",
   published: true,
+  category: "bouquet",
 };
 
 function ProductsPage() {
@@ -95,7 +96,7 @@ function ProductsPage() {
           onClick={() => setDraft({ ...EMPTY })}
           className="h-11 rounded-full bg-primary px-6 text-sm text-primary-foreground"
         >
-          Добавить букет
+          Добавить товар
         </button>
       </div>
 
@@ -123,6 +124,22 @@ function ProductsPage() {
             value={String(draft.stems)}
             onChange={(v) => setDraft({ ...draft, stems: Number(v.replace(/\D/g, "")) || 1 })}
           />
+          <label className="text-sm">
+            <span className="text-muted-foreground">Тип товара</span>
+            <select
+              value={draft.category}
+              onChange={(event) =>
+                setDraft({ ...draft, category: event.target.value as Product["category"] })
+              }
+              className="mt-1 h-11 w-full rounded-2xl border border-border bg-background px-4 text-sm"
+            >
+              {CATEGORIES.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="text-sm">
             <span className="text-muted-foreground">Цвет</span>
             <select
@@ -238,7 +255,8 @@ function ProductsPage() {
               <div className="flex-1">
                 <p className="font-display text-2xl">{product.title}</p>
                 <p className="text-sm text-muted-foreground">
-                  {product.stems} шт · {product.color} · {formatPrice(product.price)}
+                  {categoryLabel(product.category)} · {product.stems} шт · {product.color} ·{" "}
+                  {formatPrice(product.price)}
                   {!product.published && " · скрыт"}
                 </p>
               </div>

@@ -3,6 +3,8 @@ import white from "@/assets/bouquet-white.jpg";
 import mix from "@/assets/bouquet-mix.jpg";
 import hero from "@/assets/tulips-hero.jpg";
 
+export type ProductCategory = "single" | "composition" | "bouquet";
+
 export type Product = {
   id: string;
   slug: string;
@@ -14,7 +16,18 @@ export type Product = {
   price: number;
   image_url: string;
   published: boolean;
+  category: ProductCategory;
 };
+
+export const CATEGORIES: Array<{ value: ProductCategory; label: string; plural: string }> = [
+  { value: "single", label: "Штучно", plural: "Тюльпаны штучно" },
+  { value: "bouquet", label: "Букеты", plural: "Букеты" },
+  { value: "composition", label: "Композиции", plural: "Композиции" },
+];
+
+export function categoryLabel(value: string): string {
+  return CATEGORIES.find((item) => item.value === value)?.label ?? "Букеты";
+}
 
 export const DELIVERY_PRICE = 490;
 export const FREE_DELIVERY_FROM = 7000;
