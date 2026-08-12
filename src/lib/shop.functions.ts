@@ -66,57 +66,20 @@ export const submitOrder = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ orderNo: number; total: number }> => {
     const supabase = publicClient();
 
-    let total = 0;
-    let rows: Array<{ id: string; title: string; price: number; qty: number }> = [];
+    const { data: result, error } = await supabase.rpc("place_order", {
+      _kind: data.kind,
+      _customer_name: data.customer_name,
+      _phone: data.phone,
+      _address: data.address,
+      _delivery_date: data.delivery_date,
+      _delivery_slot: data.delivery_slot,
+      _comment: data.comment,
+      _items: data.items.map((item) => ({ product_id: item.productId, qty: item.qty })),
+    });
 
-    if (data.items.length > 0) {
-      const { data: products, error } = await supabase
-        .from("products")
-        .select("id, title, price")
-        .in(
-          "id",
-          data.items.map((item) => item.productId),
-        )
-        .eq("published", true);
-      if (error) throw new Error(error.message);
-      rows = data.items.flatMap((item) => {
-        const product = (products ?? []).find((entry) => entry.id === item.productId);
-        if (!product) return [];
-        return [{ id: product.id, title: product.title, price: product.price, qty: item.qty }];
-      });
-      if (rows.length === 0) throw new Error("Товары не найдены");
-      total = rows.reduce((sum, row) => sum + row.price * row.qty, 0);
-      if (total < 7000) total += 490;
-    }
-
-    const { data: inserted, error: orderError } = await supabase
-      .from("orders")
-      .insert({
-        kind: data.kind,
-        customer_name: data.customer_name,
-        phone: data.phone,
-        address: data.address,
-        delivery_date: data.delivery_date ? data.delivery_date : null,
-        delivery_slot: data.delivery_slot,
-        comment: data.comment,
-        total,
-      })
-      .select("id, order_no")
-      .single();
-    if (orderError || !inserted) throw new Error(orderError?.message ?? "Не удалось создать заявку");
-
-    if (rows.length > 0) {
-      const { error: itemsError } = await supabase.from("order_items").insert(
-        rows.map((row) => ({
-          order_id: inserted.id,
-          product_id: row.id,
-          title: row.title,
-          price: row.price,
-          qty: row.qty,
-        })),
-      );
-      if (itemsError) throw new Error(itemsError.message);
-    }
-
-    return { orderNo: Number(inserted.order_no), total };
+    if (error) throw new Error(error.message);
+    const row = (result ?? [])[0];
+    if (!row) throw new Error("Не удалось создать заявку");
+    return { orderNo: Number(row.order_no), total: Number(row.total) };
   });
+

@@ -6,7 +6,7 @@ import { useCart } from "@/lib/cart";
 const NAV = [
   { to: "/catalog", label: "Каталог" },
   { to: "/delivery", label: "Доставка" },
-  { to: "/#about", label: "О нас" },
+  { to: "/", hash: "about", label: "О нас" },
 ] as const;
 
 export function Header() {
@@ -36,8 +36,9 @@ export function Header() {
         <nav className="hidden items-center gap-7 text-sm md:flex">
           {NAV.map((item) => (
             <Link
-              key={item.to}
+              key={item.label}
               to={item.to}
+              {...("hash" in item ? { hash: item.hash } : {})}
               className="text-muted-foreground transition-colors hover:text-foreground"
               activeProps={{ className: "text-foreground" }}
             >
@@ -79,7 +80,13 @@ export function Header() {
       {open && (
         <nav className="mx-auto mt-3 flex max-w-6xl flex-col gap-3 border-t border-border/60 px-5 pt-4 pb-2 text-sm md:hidden">
           {NAV.map((item) => (
-            <Link key={item.to} to={item.to} onClick={() => setOpen(false)} className="py-1">
+            <Link
+              key={item.label}
+              to={item.to}
+              {...("hash" in item ? { hash: item.hash } : {})}
+              onClick={() => setOpen(false)}
+              className="py-1"
+            >
               {item.label}
             </Link>
           ))}
