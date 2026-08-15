@@ -176,7 +176,7 @@ export const askFlowerBot = createServerFn({ method: "POST" })
         _content: reply,
       });
 
-      return { reply, ...(orderNo ? { orderNo, total } : {}), operator };
+      return { reply, ...(orderNo !== undefined && total !== undefined ? { orderNo, total } : {}), operator };
     },
   );
 
