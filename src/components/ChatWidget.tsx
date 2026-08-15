@@ -124,7 +124,7 @@ export function ChatWidget() {
       {open && (
         <div className="fixed bottom-24 right-5 z-50 flex h-[32rem] w-[min(23rem,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
           <div className="border-b border-border/60 bg-secondary/40 px-5 py-4">
-            <p className="font-display text-xl leading-none">Тюльпа</p>
+            <p className="font-display text-xl leading-none">Помошник</p>
             <p className="mt-1 text-xs text-muted-foreground">
               {operatorMode
                 ? "Живой флорист подключён к чату"
