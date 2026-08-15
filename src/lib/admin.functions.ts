@@ -19,24 +19,25 @@ export type AdminOrder = {
   items: Array<{ id: string; title: string; price: number; qty: number }>;
 };
 
-async function assertAdmin(context: { supabase: any; userId: string }) {
-  const { data, error } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "admin",
-  });
+async function isAdmin(context: { supabase: any; userId: string }): Promise<boolean> {
+  const { data, error } = await context.supabase
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", context.userId)
+    .eq("role", "admin")
+    .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Нет доступа");
+  return Boolean(data);
+}
+
+async function assertAdmin(context: { supabase: any; userId: string }) {
+  if (!(await isAdmin(context))) throw new Error("Нет доступа");
 }
 
 export const getAdminStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<{ isAdmin: boolean }> => {
-    const { data, error } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (error) throw new Error(error.message);
-    return { isAdmin: Boolean(data) };
+    return { isAdmin: await isAdmin(context) };
   });
 
 /** Первый зарегистрированный пользователь может стать администратором. */

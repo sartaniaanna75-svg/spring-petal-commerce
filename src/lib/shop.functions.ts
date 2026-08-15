@@ -64,9 +64,9 @@ const orderSchema = z.object({
 export const submitOrder = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => orderSchema.parse(input))
   .handler(async ({ data }): Promise<{ orderNo: number; total: number }> => {
-    const supabase = publicClient();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: result, error } = await supabase.rpc("place_order", {
+    const { data: result, error } = await supabaseAdmin.rpc("place_order", {
       _kind: data.kind,
       _customer_name: data.customer_name,
       _phone: data.phone,
