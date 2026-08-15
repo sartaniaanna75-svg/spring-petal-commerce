@@ -22,16 +22,26 @@ function publicClient() {
   });
 }
 
-const PRODUCT_COLUMNS = "id, slug, title, description, composition, stems, color, price, image_url, published, category";
+const PRODUCT_COLUMNS =
+  "id, slug, title, description, composition, stems, color, price, image_url, images, published, category, sort_order";
+
+function mapProduct(row: any): Product {
+  return {
+    ...row,
+    images: Array.isArray(row.images) ? (row.images as string[]) : [],
+    sort_order: row.sort_order ?? 0,
+  } as Product;
+}
 
 export const listProducts = createServerFn({ method: "GET" }).handler(async (): Promise<Product[]> => {
   const { data, error } = await publicClient()
     .from("products")
     .select(PRODUCT_COLUMNS)
     .eq("published", true)
+    .order("sort_order", { ascending: true })
     .order("price", { ascending: true });
   if (error) throw new Error(error.message);
-  return (data ?? []) as Product[];
+  return ((data ?? []) as any[]).map(mapProduct);
 });
 
 export const getProduct = createServerFn({ method: "GET" })
@@ -44,7 +54,8 @@ export const getProduct = createServerFn({ method: "GET" })
       .eq("published", true)
       .limit(1);
     if (error) throw new Error(error.message);
-    return ((rows ?? [])[0] as Product | undefined) ?? null;
+    const row = (rows ?? [])[0];
+    return row ? mapProduct(row) : null;
   });
 
 const orderSchema = z.object({
