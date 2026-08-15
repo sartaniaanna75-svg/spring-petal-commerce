@@ -69,7 +69,7 @@ function publicClient() {
 export async function loadBotProducts(): Promise<BotProduct[]> {
   const { data, error } = await publicClient()
     .from("products")
-    .select("id, slug, title, description, composition, stems, color, price, category")
+    .select("id, slug, title, description, composition, stems, color, price, category, image_url, images")
     .eq("published", true)
     .order("sort_order", { ascending: true })
     .limit(100);
