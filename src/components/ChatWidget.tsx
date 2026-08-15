@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { askFlowerBot, pollChat, requestOperator, startChatSession } from "@/lib/chat.functions";
 import type { ChatCard } from "@/lib/chat-cards";
 import { useCart } from "@/lib/cart";
-import { formatPrice, productImage } from "@/lib/shop";
+import { formatPrice, productImage, type ProductCategory } from "@/lib/shop";
 
 type Message = { role: "user" | "assistant" | "operator"; content: string; cards?: ChatCard[] };
 
@@ -22,7 +22,7 @@ function ChatCards({ cards, onClose }: { cards: ChatCard[]; onClose: () => void 
         >
           <Link to="/catalog/$slug" params={{ slug: card.slug }} onClick={onClose}>
             <img
-              src={productImage(card)}
+              src={card.images[0] ?? productImage({ ...card, category: card.category as ProductCategory })}
               alt={card.title}
               loading="lazy"
               className="h-24 w-full object-cover"
