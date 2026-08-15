@@ -152,6 +152,23 @@ export const askFlowerBot = createServerFn({ method: "POST" })
                 _session_id: data.sessionId,
                 _order_no: orderNo,
               });
+              const { notifyNewOrder } = await import("@/lib/telegram.server");
+              await notifyNewOrder({
+                orderNo,
+                total,
+                kind: "order",
+                customerName: session.customer_name,
+                phone: session.phone,
+                address: payload.address ?? "",
+                deliveryDate: payload.date ?? "",
+                deliverySlot: payload.slot ?? "",
+                comment: payload.comment ?? "",
+                source: "Чат-бот на сайте",
+                items: items.map((item) => {
+                  const product = products.find((candidate) => candidate.id === item.product_id)!;
+                  return { title: product.title, qty: item.qty, price: product.price };
+                }),
+              });
               reply = `${reply}\n\nЗаявка №${orderNo} оформлена, к оплате ${total.toLocaleString("ru-RU")} ₽. Флорист перезвонит на ${session.phone} для подтверждения.`.trim();
             }
           }

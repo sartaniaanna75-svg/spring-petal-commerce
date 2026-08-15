@@ -1,0 +1,1 @@
+DELETE FROM public.telegram_subscribers WHERE chat_id = 1;
