@@ -137,6 +137,7 @@ function RootComponent() {
           </main>
           {!isAdminArea && <Footer />}
         </div>
+        {!isAdminArea && <ChatWidget />}
         <Toaster position="top-center" />
       </CartProvider>
     </QueryClientProvider>
