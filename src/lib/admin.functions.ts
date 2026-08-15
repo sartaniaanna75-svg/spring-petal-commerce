@@ -362,3 +362,128 @@ export const deleteProduct = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/* ─── Чаты бота ─────────────────────────────────────────────── */
+
+export type AdminChat = {
+  id: string;
+  customer_name: string;
+  phone: string;
+  status: string;
+  needs_operator: boolean;
+  order_no: number | null;
+  admin_note: string;
+  last_message_at: string;
+  created_at: string;
+  preview: string;
+};
+
+export type AdminChatMessage = {
+  id: string;
+  role: "user" | "assistant" | "operator";
+  content: string;
+  created_at: string;
+};
+
+export const listChats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AdminChat[]> => {
+    await assertAdmin(context);
+    const { data, error } = await context.supabase
+      .from("chat_sessions")
+      .select(
+        "id, customer_name, phone, status, needs_operator, order_no, admin_note, last_message_at, created_at, chat_messages(content, created_at)",
+      )
+      .order("last_message_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error(error.message);
+    return ((data ?? []) as any[]).map((row) => {
+      const messages = [...(row.chat_messages ?? [])].sort(
+        (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+      return {
+        id: row.id,
+        customer_name: row.customer_name,
+        phone: row.phone,
+        status: row.status,
+        needs_operator: row.needs_operator,
+        order_no: row.order_no ? Number(row.order_no) : null,
+        admin_note: row.admin_note ?? "",
+        last_message_at: row.last_message_at,
+        created_at: row.created_at,
+        preview: (messages[0]?.content ?? "").slice(0, 160),
+      };
+    });
+  });
+
+export const getChatMessages = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ sessionId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }): Promise<AdminChatMessage[]> => {
+    await assertAdmin(context);
+    const { data: rows, error } = await context.supabase
+      .from("chat_messages")
+      .select("id, role, content, created_at")
+      .eq("session_id", data.sessionId)
+      .order("created_at", { ascending: true })
+      .limit(300);
+    if (error) throw new Error(error.message);
+    return (rows ?? []) as AdminChatMessage[];
+  });
+
+export const replyAsOperator = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({ sessionId: z.string().uuid(), content: z.string().trim().min(1).max(2000) })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { error } = await context.supabase
+      .from("chat_messages")
+      .insert({ session_id: data.sessionId, role: "operator", content: data.content });
+    if (error) throw new Error(error.message);
+    const { error: sessionError } = await context.supabase
+      .from("chat_sessions")
+      .update({ status: "operator", last_message_at: new Date().toISOString() })
+      .eq("id", data.sessionId);
+    if (sessionError) throw new Error(sessionError.message);
+    return { ok: true };
+  });
+
+export const updateChat = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        sessionId: z.string().uuid(),
+        needs_operator: z.boolean().optional(),
+        status: z.enum(["active", "operator", "ordered", "closed"]).optional(),
+        admin_note: z.string().trim().max(1000).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const fields: { needs_operator?: boolean; status?: string; admin_note?: string } = {};
+    if (data.needs_operator !== undefined) fields.needs_operator = data.needs_operator;
+    if (data.status !== undefined) fields.status = data.status;
+    if (data.admin_note !== undefined) fields.admin_note = data.admin_note;
+    const { error } = await context.supabase
+      .from("chat_sessions")
+      .update(fields)
+      .eq("id", data.sessionId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteChat = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ sessionId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { error } = await context.supabase.from("chat_sessions").delete().eq("id", data.sessionId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

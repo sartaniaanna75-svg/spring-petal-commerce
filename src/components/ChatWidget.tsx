@@ -1,36 +1,41 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { MessageCircleHeart, Send, X, Loader2 } from "lucide-react";
+import { MessageCircleHeart, Send, X, Loader2, LifeBuoy } from "lucide-react";
 import { toast } from "sonner";
-import { askFlowerBot } from "@/lib/chat.functions";
-import { submitOrder } from "@/lib/shop.functions";
+import { askFlowerBot, pollChat, requestOperator, startChatSession } from "@/lib/chat.functions";
 
-type Message = { role: "user" | "assistant"; content: string };
+type Message = { role: "user" | "assistant" | "operator"; content: string };
 
-const STORAGE_KEY = "tulip-bot-lead-v1";
+const STORAGE_KEY = "tulip-bot-lead-v2";
 
 const GREETING =
-  "Здравствуйте! Я Тюльпа — помогу подобрать букет или собрать свой из наших тюльпанов. Расскажите, для кого и какой повод?";
+  "Здравствуйте! Я Тюльпа — помогу подобрать букет или собрать свой из наших тюльпанов, посчитаю сумму и сразу оформлю заявку. Расскажите, для кого и какой повод?";
+
+type Lead = { name: string; phone: string; sessionId: string };
 
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
-  const [lead, setLead] = useState<{ name: string; phone: string } | null>(null);
+  const [lead, setLead] = useState<Lead | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [agree, setAgree] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [messages, setMessages] = useState<Message[]>([{ role: "assistant", content: GREETING }]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [operatorMode, setOperatorMode] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const ask = useServerFn(askFlowerBot);
-  const sendLead = useServerFn(submitOrder);
+  const start = useServerFn(startChatSession);
+  const poll = useServerFn(pollChat);
+  const callOperator = useServerFn(requestOperator);
 
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) setLead(JSON.parse(raw) as { name: string; phone: string });
+      if (raw) setLead(JSON.parse(raw) as Lead);
     } catch {
       /* ignore */
     }
@@ -40,31 +45,44 @@ export function ChatWidget() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, open, loading]);
 
-  async function startChat(event: React.FormEvent) {
-    event.preventDefault();
-    if (name.trim().length < 2 || phone.trim().length < 6 || !agree) return;
-    const next = { name: name.trim(), phone: phone.trim() };
-    setLead(next);
+  const sync = useCallback(async () => {
+    if (!lead) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      const result = await poll({ data: { sessionId: lead.sessionId } });
+      setOperatorMode(result.needsOperator);
+      if (result.messages.length > 0) {
+        setMessages([{ role: "assistant", content: GREETING }, ...result.messages]);
+      }
     } catch {
       /* ignore */
     }
+  }, [lead, poll]);
+
+  // Подтягиваем историю и ответы живого оператора, пока чат открыт.
+  useEffect(() => {
+    if (!open || !lead) return;
+    void sync();
+    const timer = window.setInterval(() => void sync(), 12000);
+    return () => window.clearInterval(timer);
+  }, [open, lead, sync]);
+
+  async function startChat(event: React.FormEvent) {
+    event.preventDefault();
+    if (name.trim().length < 2 || phone.trim().length < 6 || !agree || starting) return;
+    setStarting(true);
     try {
-      await sendLead({
-        data: {
-          kind: "callback",
-          customer_name: next.name,
-          phone: next.phone,
-          address: "",
-          delivery_date: "",
-          delivery_slot: "",
-          comment: "Обращение через чат-бота на сайте",
-          items: [],
-        },
-      });
+      const result = await start({ data: { name: name.trim(), phone: phone.trim() } });
+      const next: Lead = { name: name.trim(), phone: phone.trim(), sessionId: result.sessionId };
+      setLead(next);
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
     } catch {
-      /* заявка не критична для чата */
+      toast.error("Не удалось начать чат, попробуйте ещё раз");
+    } finally {
+      setStarting(false);
     }
   }
 
@@ -72,15 +90,14 @@ export function ChatWidget() {
     event.preventDefault();
     const text = input.trim();
     if (!text || loading || !lead) return;
-    const next = [...messages, { role: "user" as const, content: text }];
-    setMessages(next);
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
     setInput("");
     setLoading(true);
     try {
-      const result = await ask({
-        data: { name: lead.name, phone: lead.phone, messages: next.slice(-20) },
-      });
+      const result = await ask({ data: { sessionId: lead.sessionId, message: text } });
       setMessages((prev) => [...prev, { role: "assistant", content: result.reply }]);
+      if (result.orderNo) toast.success(`Заявка №${result.orderNo} оформлена`);
+      if (result.operator) setOperatorMode(true);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Помощник недоступен");
       setMessages((prev) => [
@@ -108,7 +125,11 @@ export function ChatWidget() {
         <div className="fixed bottom-24 right-5 z-50 flex h-[32rem] w-[min(23rem,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-2xl">
           <div className="border-b border-border/60 bg-secondary/40 px-5 py-4">
             <p className="font-display text-xl leading-none">Тюльпа</p>
-            <p className="mt-1 text-xs text-muted-foreground">Подберёт букет из нашего каталога</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {operatorMode
+                ? "Живой флорист подключён к чату"
+                : "Подберёт букет, посчитает и оформит заявку"}
+            </p>
           </div>
 
           {!lead ? (
@@ -128,7 +149,7 @@ export function ChatWidget() {
               <input
                 value={phone}
                 onChange={(event) => setPhone(event.target.value)}
-                placeholder="+7 (999) 000-00-00"
+                placeholder="Телефон"
                 type="tel"
                 className="h-11 rounded-xl border border-border bg-background px-4 outline-none focus:border-primary/60"
                 required
@@ -139,12 +160,11 @@ export function ChatWidget() {
                   type="checkbox"
                   checked={agree}
                   onChange={(event) => setAgree(event.target.checked)}
-                  className="mt-0.5 h-4 w-4 accent-primary"
-                  required
+                  className="mt-0.5"
                 />
                 <span>
-                  Согласен(на) с{" "}
-                  <Link to="/privacy" className="underline hover:text-foreground">
+                  Согласен с{" "}
+                  <Link to="/privacy" className="text-primary underline-offset-4 hover:underline">
                     политикой конфиденциальности
                   </Link>{" "}
                   и обработкой персональных данных
@@ -152,10 +172,10 @@ export function ChatWidget() {
               </label>
               <button
                 type="submit"
-                disabled={name.trim().length < 2 || phone.trim().length < 6 || !agree}
+                disabled={name.trim().length < 2 || phone.trim().length < 6 || !agree || starting}
                 className="mt-1 h-11 rounded-full bg-primary text-sm text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
               >
-                Начать чат
+                {starting ? "Открываем чат…" : "Начать чат"}
               </button>
             </form>
           ) : (
@@ -167,9 +187,14 @@ export function ChatWidget() {
                     className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 ${
                       message.role === "user"
                         ? "ml-auto bg-primary text-primary-foreground"
-                        : "bg-secondary/60 text-foreground"
+                        : message.role === "operator"
+                          ? "border border-primary/40 bg-secondary/60 text-foreground"
+                          : "bg-secondary/60 text-foreground"
                     }`}
                   >
+                    {message.role === "operator" && (
+                      <span className="mb-1 block text-[11px] text-primary">Флорист магазина</span>
+                    )}
                     {message.content}
                   </div>
                 ))}
@@ -179,6 +204,26 @@ export function ChatWidget() {
                   </div>
                 )}
               </div>
+
+              {!operatorMode && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await callOperator({ data: { sessionId: lead.sessionId } });
+                      setOperatorMode(true);
+                      toast.success("Флорист подключится к чату");
+                      void sync();
+                    } catch {
+                      toast.error("Не удалось позвать оператора");
+                    }
+                  }}
+                  className="mx-4 mb-1 inline-flex items-center justify-center gap-2 rounded-full border border-border py-2 text-xs text-muted-foreground hover:border-primary hover:text-foreground"
+                >
+                  <LifeBuoy className="h-3.5 w-3.5" /> Позвать живого флориста
+                </button>
+              )}
+
               <form onSubmit={send} className="flex items-center gap-2 border-t border-border/60 p-3">
                 <input
                   value={input}

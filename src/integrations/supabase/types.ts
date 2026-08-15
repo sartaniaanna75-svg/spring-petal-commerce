@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          session_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          session_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_sessions: {
+        Row: {
+          admin_note: string
+          created_at: string
+          customer_name: string
+          id: string
+          last_message_at: string
+          needs_operator: boolean
+          order_no: number | null
+          phone: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string
+          created_at?: string
+          customer_name?: string
+          id?: string
+          last_message_at?: string
+          needs_operator?: boolean
+          order_no?: number | null
+          phone?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string
+          created_at?: string
+          customer_name?: string
+          id?: string
+          last_message_at?: string
+          needs_operator?: boolean
+          order_no?: number | null
+          phone?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -187,6 +258,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      chat_append: {
+        Args: { _content: string; _role: string; _session_id: string }
+        Returns: undefined
+      }
+      chat_escalate: { Args: { _session_id: string }; Returns: undefined }
+      chat_set_order: {
+        Args: { _order_no: number; _session_id: string }
+        Returns: undefined
+      }
+      chat_start: { Args: { _name: string; _phone: string }; Returns: string }
       place_order: {
         Args: {
           _address: string

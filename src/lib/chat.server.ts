@@ -1,10 +1,22 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-export async function loadCatalogForBot(): Promise<string> {
+export type BotProduct = {
+  id: string;
+  slug: string;
+  title: string;
+  price: number;
+  stems: number;
+  color: string;
+  category: string;
+  composition: string;
+  description: string;
+};
+
+function publicClient() {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
   const url = process.env["SUPABASE_URL"]!;
-  const client = createClient<Database>(url, key, {
+  return createClient<Database>(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
       fetch: (input, init) => {
@@ -17,26 +29,54 @@ export async function loadCatalogForBot(): Promise<string> {
       },
     },
   });
+}
 
-  const { data, error } = await client
+export async function loadBotProducts(): Promise<BotProduct[]> {
+  const { data, error } = await publicClient()
     .from("products")
-    .select("title, description, composition, stems, color, price, category, slug")
+    .select("id, slug, title, description, composition, stems, color, price, category")
     .eq("published", true)
     .order("sort_order", { ascending: true })
     .limit(100);
 
   if (error) throw new Error(error.message);
+  return ((data ?? []) as any[]).map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    price: row.price,
+    stems: row.stems,
+    color: row.color,
+    category: row.category,
+    composition: row.composition ?? "",
+    description: row.description ?? "",
+  }));
+}
 
-  const categories: Record<string, string> = {
-    single: "штучно",
-    bouquet: "букет",
-    composition: "композиция",
-  };
+const CATEGORY_LABELS: Record<string, string> = {
+  single: "штучно",
+  bouquet: "букет",
+  composition: "композиция",
+};
 
-  return ((data ?? []) as any[])
+export function catalogToText(products: BotProduct[]): string {
+  return products
     .map(
       (p) =>
-        `- ${p.title} (${categories[p.category] ?? p.category}) — ${p.price} ₽, ${p.stems} шт., цвет: ${p.color}. ${p.composition || p.description || ""}`.trim(),
+        `- slug: ${p.slug} | ${p.title} (${CATEGORY_LABELS[p.category] ?? p.category}) — ${p.price} ₽, ${p.stems} шт., цвет: ${p.color}. ${p.composition || p.description || ""}`.trim(),
     )
     .join("\n");
+}
+
+/** Сообщения переписки для передачи модели и для оператора. */
+export async function loadChatHistory(sessionId: string, limit = 40) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("chat_messages")
+    .select("id, role, content, created_at")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Array<{ id: string; role: string; content: string; created_at: string }>;
 }
