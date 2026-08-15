@@ -85,6 +85,8 @@ export async function loadBotProducts(): Promise<BotProduct[]> {
     category: row.category,
     composition: row.composition ?? "",
     description: row.description ?? "",
+    image_url: row.image_url ?? "",
+    images: Array.isArray(row.images) ? (row.images as string[]).filter(Boolean) : [],
   }));
 }
 
