@@ -466,8 +466,14 @@ export const updateChat = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { sessionId, ...fields } = data;
-    const { error } = await context.supabase.from("chat_sessions").update(fields).eq("id", sessionId);
+    const fields: Record<string, unknown> = {};
+    if (data.needs_operator !== undefined) fields["needs_operator"] = data.needs_operator;
+    if (data.status !== undefined) fields["status"] = data.status;
+    if (data.admin_note !== undefined) fields["admin_note"] = data.admin_note;
+    const { error } = await context.supabase
+      .from("chat_sessions")
+      .update(fields)
+      .eq("id", data.sessionId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
