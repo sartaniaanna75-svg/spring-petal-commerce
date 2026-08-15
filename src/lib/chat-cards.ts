@@ -1,4 +1,5 @@
 export type ChatCard = {
+  id: string;
   slug: string;
   title: string;
   price: number;

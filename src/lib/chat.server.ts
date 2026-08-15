@@ -17,6 +17,7 @@ export type BotProduct = {
 
 /** Карточка товара для показа в чате. */
 export type ChatCard = {
+  id: string;
   slug: string;
   title: string;
   price: number;
@@ -35,6 +36,7 @@ export function toChatCards(products: BotProduct[], slugs: string[]): ChatCard[]
     if (!product || seen.has(slug)) continue;
     seen.add(slug);
     cards.push({
+      id: product.id,
       slug: product.slug,
       title: product.title,
       price: product.price,
