@@ -66,12 +66,20 @@ export const askFlowerBot = createServerFn({ method: "POST" })
   .handler(
     async ({
       data,
-    }): Promise<{ reply: string; orderNo?: number; total?: number; operator?: boolean }> => {
+    }): Promise<{
+      reply: string;
+      orderNo?: number;
+      total?: number;
+      operator?: boolean;
+      cards?: ChatCard[];
+    }> => {
       const apiKey = process.env["LOVABLE_API_KEY"];
       if (!apiKey) throw new Error("AI не настроен");
 
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { loadBotProducts, catalogToText, loadChatHistory } = await import("@/lib/chat.server");
+      const { loadBotProducts, catalogToText, loadChatHistory, toChatCards } = await import(
+        "@/lib/chat.server"
+      );
 
       const { data: sessionRows, error: sessionError } = await supabaseAdmin
         .from("chat_sessions")
