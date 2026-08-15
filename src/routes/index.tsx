@@ -58,7 +58,7 @@ function Hero() {
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-14 md:grid-cols-[1.05fr_1fr] md:py-24">
         <div className="rise-in">
           <p className="text-sm tracking-[0.25em] text-muted-foreground uppercase">Москва · с 2016 года</p>
-          <h1 className="mt-5 font-display text-5xl leading-[1.05] md:text-7xl">
+          <h1 className="mt-5 font-display text-6xl leading-[1.02] sm:text-7xl md:text-8xl lg:text-9xl">
             Свежие тюльпаны
             <br />
             <span className="text-primary italic">с доставкой сегодня</span>
