@@ -108,7 +108,7 @@ export const askFlowerBot = createServerFn({ method: "POST" })
       let total: number | undefined;
       let operator = false;
 
-      const orderMatch = reply.match(/\[\[ORDER\]\]\s*(\{[\s\S]*?\})/);
+      const orderMatch = reply.match(/\[\[ORDER\]\]\s*(\{[\s\S]*\})/);
       const operatorMatch = reply.match(/\[\[OPERATOR\]\]\s*(\{[\s\S]*?\})?/);
       reply = reply
         .replace(/\[\[ORDER\]\][\s\S]*$/, "")
