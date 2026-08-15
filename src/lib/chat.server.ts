@@ -11,7 +11,42 @@ export type BotProduct = {
   category: string;
   composition: string;
   description: string;
+  image_url: string;
+  images: string[];
 };
+
+/** Карточка товара для показа в чате. */
+export type ChatCard = {
+  slug: string;
+  title: string;
+  price: number;
+  stems: number;
+  color: string;
+  category: string;
+  image_url: string;
+  images: string[];
+};
+
+export function toChatCards(products: BotProduct[], slugs: string[]): ChatCard[] {
+  const seen = new Set<string>();
+  const cards: ChatCard[] = [];
+  for (const slug of slugs) {
+    const product = products.find((item) => item.slug === slug);
+    if (!product || seen.has(slug)) continue;
+    seen.add(slug);
+    cards.push({
+      slug: product.slug,
+      title: product.title,
+      price: product.price,
+      stems: product.stems,
+      color: product.color,
+      category: product.category,
+      image_url: product.image_url,
+      images: product.images,
+    });
+  }
+  return cards.slice(0, 6);
+}
 
 function publicClient() {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
