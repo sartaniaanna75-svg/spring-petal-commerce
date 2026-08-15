@@ -238,13 +238,24 @@ export const askFlowerBot = createServerFn({ method: "POST" })
 
       if (!reply) reply = "Извините, не удалось ответить. Повторите вопрос, пожалуйста.";
 
+      // В историю сохраняем текст вместе со служебным блоком карточек,
+      // чтобы после перезагрузки чата фото снова отрисовались.
+      const stored =
+        cards.length > 0
+          ? `${reply}\n[[CARDS]]${JSON.stringify({ slugs: cards.map((card) => card.slug) })}`
+          : reply;
       await supabaseAdmin.rpc("chat_append", {
         _session_id: data.sessionId,
         _role: "assistant",
-        _content: reply,
+        _content: stored,
       });
 
-      return { reply, ...(orderNo !== undefined && total !== undefined ? { orderNo, total } : {}), operator };
+      return {
+        reply,
+        ...(orderNo !== undefined && total !== undefined ? { orderNo, total } : {}),
+        operator,
+        ...(cards.length > 0 ? { cards } : {}),
+      };
     },
   );
 
