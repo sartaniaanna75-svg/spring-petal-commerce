@@ -156,7 +156,7 @@ export const askFlowerBot = createServerFn({ method: "POST" })
             }
           }
         } catch (error) {
-          console.error("chat order failed", orderMatch[1], error);
+          console.error("chat order failed", error);
           operator = true;
         }
       }
