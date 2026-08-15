@@ -14,7 +14,14 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
         const telegramKey = process.env["TELEGRAM_API_KEY"];
         if (!telegramKey) return new Response("Not configured", { status: 500 });
 
-        const { telegramWebhookSecret, sendTelegramMessage } = await import("@/lib/telegram.server");
+        const { telegramWebhookSecret, sendTelegramMessage: rawSend } = await import("@/lib/telegram.server");
+        const sendTelegramMessage = async (chatId: number | string, text: string) => {
+          try {
+            await rawSend(chatId, text);
+          } catch (error) {
+            console.error("telegram reply failed", error);
+          }
+        };
         const expected = await telegramWebhookSecret(telegramKey);
         const actual = request.headers.get("X-Telegram-Bot-Api-Secret-Token") ?? "";
         if (!safeEqual(actual, expected)) return new Response("Unauthorized", { status: 401 });
