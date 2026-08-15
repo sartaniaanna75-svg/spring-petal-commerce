@@ -91,6 +91,34 @@ export const submitOrder = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     const row = (result ?? [])[0];
     if (!row) throw new Error("Не удалось создать заявку");
-    return { orderNo: Number(row.order_no), total: Number(row.total) };
+
+    const orderNo = Number(row.order_no);
+    const total = Number(row.total);
+
+    const { notifyNewOrder } = await import("@/lib/telegram.server");
+    const { data: itemRows } = await supabaseAdmin
+      .from("order_items")
+      .select("title, qty, price, order_id, orders!inner(order_no)")
+      .eq("orders.order_no", orderNo);
+
+    await notifyNewOrder({
+      orderNo,
+      total,
+      kind: data.kind,
+      customerName: data.customer_name,
+      phone: data.phone,
+      address: data.address,
+      deliveryDate: data.delivery_date,
+      deliverySlot: data.delivery_slot,
+      comment: data.comment,
+      source: "Сайт",
+      items: ((itemRows ?? []) as any[]).map((item) => ({
+        title: String(item.title),
+        qty: Number(item.qty),
+        price: Number(item.price),
+      })),
+    });
+
+    return { orderNo, total };
   });
 
