@@ -1,7 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { splitCards, type ChatCard } from "@/lib/chat-cards";
 
-export type ChatTurn = { role: "user" | "assistant" | "operator"; content: string };
+export type { ChatCard };
+
+export type ChatTurn = {
+  role: "user" | "assistant" | "operator";
+  content: string;
+  cards?: ChatCard[];
+};
 
 const startSchema = z.object({
   name: z.string().trim().min(2).max(100),
@@ -32,12 +39,20 @@ export const askFlowerBot = createServerFn({ method: "POST" })
   .handler(
     async ({
       data,
-    }): Promise<{ reply: string; orderNo?: number; total?: number; operator?: boolean }> => {
+    }): Promise<{
+      reply: string;
+      orderNo?: number;
+      total?: number;
+      operator?: boolean;
+      cards?: ChatCard[];
+    }> => {
       const apiKey = process.env["LOVABLE_API_KEY"];
       if (!apiKey) throw new Error("AI не настроен");
 
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { loadBotProducts, catalogToText, loadChatHistory } = await import("@/lib/chat.server");
+      const { loadBotProducts, catalogToText, loadChatHistory, toChatCards } = await import(
+        "@/lib/chat.server"
+      );
 
       const { data: sessionRows, error: sessionError } = await supabaseAdmin
         .from("chat_sessions")
@@ -74,6 +89,11 @@ export const askFlowerBot = createServerFn({ method: "POST" })
         "или ты не можешь помочь — напиши, что подключаешь флориста, и последней строкой добавь ровно:",
         '[[OPERATOR]]{"reason":"кратко причина"}',
         "",
+        "ПОКАЗ ФОТО И КАРТОЧЕК: когда предлагаешь или сравниваешь конкретные позиции, ВСЕГДА показывай их карточки —",
+        "последней строкой добавь служебный блок ровно в формате (1–4 slug из каталога):",
+        '[[CARDS]]{"slugs":["tulip-slug-1","tulip-slug-2"]}',
+        "Клиент увидит фото, название и цену карточками. В тексте не вставляй ссылки на изображения.",
+        "",
         "КАТАЛОГ:",
         catalogToText(products),
       ].join("\n");
@@ -107,6 +127,10 @@ export const askFlowerBot = createServerFn({ method: "POST" })
       let orderNo: number | undefined;
       let total: number | undefined;
       let operator = false;
+
+      const cardsSplit = splitCards(reply);
+      reply = cardsSplit.text;
+      const cards = toChatCards(products, cardsSplit.slugs);
 
       const orderMatch = reply.match(/\[\[ORDER\]\]\s*(\{[\s\S]*\})/);
       const operatorMatch = reply.match(/\[\[OPERATOR\]\]\s*(\{[\s\S]*?\})?/);
@@ -187,13 +211,24 @@ export const askFlowerBot = createServerFn({ method: "POST" })
 
       if (!reply) reply = "Извините, не удалось ответить. Повторите вопрос, пожалуйста.";
 
+      // В историю сохраняем текст вместе со служебным блоком карточек,
+      // чтобы после перезагрузки чата фото снова отрисовались.
+      const stored =
+        cards.length > 0
+          ? `${reply}\n[[CARDS]]${JSON.stringify({ slugs: cards.map((card) => card.slug) })}`
+          : reply;
       await supabaseAdmin.rpc("chat_append", {
         _session_id: data.sessionId,
         _role: "assistant",
-        _content: reply,
+        _content: stored,
       });
 
-      return { reply, ...(orderNo !== undefined && total !== undefined ? { orderNo, total } : {}), operator };
+      return {
+        reply,
+        ...(orderNo !== undefined && total !== undefined ? { orderNo, total } : {}),
+        operator,
+        ...(cards.length > 0 ? { cards } : {}),
+      };
     },
   );
 
@@ -204,13 +239,22 @@ export const pollChat = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<{ messages: ChatTurn[]; needsOperator: boolean }> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { loadChatHistory } = await import("@/lib/chat.server");
-    const [{ data: rows }, history] = await Promise.all([
+    const { loadChatHistory, loadBotProducts, toChatCards } = await import("@/lib/chat.server");
+    const [{ data: rows }, history, products] = await Promise.all([
       supabaseAdmin.from("chat_sessions").select("needs_operator").eq("id", data.sessionId).limit(1),
       loadChatHistory(data.sessionId, 60),
+      loadBotProducts(),
     ]);
     return {
-      messages: history.map((item) => ({ role: item.role as ChatTurn["role"], content: item.content })),
+      messages: history.map((item) => {
+        const { text, slugs } = splitCards(item.content);
+        const cards = toChatCards(products, slugs);
+        return {
+          role: item.role as ChatTurn["role"],
+          content: text,
+          ...(cards.length > 0 ? { cards } : {}),
+        };
+      }),
       needsOperator: Boolean((rows ?? [])[0]?.needs_operator),
     };
   });
