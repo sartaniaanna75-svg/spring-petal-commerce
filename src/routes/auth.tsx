@@ -27,6 +27,22 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
 
+  async function onForgotPassword() {
+    if (!email) {
+      toast.error("Введите email");
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Письмо для сброса пароля отправлено");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Не удалось отправить письмо");
+    }
+  }
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/admin", replace: true });
@@ -107,6 +123,16 @@ function AuthPage() {
               {loading ? "Секунду…" : mode === "signin" ? "Войти" : "Создать аккаунт"}
             </button>
           </form>
+        )}
+
+        {mode === "signin" && !checkEmail && (
+          <button
+            type="button"
+            onClick={onForgotPassword}
+            className="mt-4 block text-sm text-muted-foreground underline-offset-4 hover:underline"
+          >
+            Забыли пароль?
+          </button>
         )}
 
         <button

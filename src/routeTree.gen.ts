@@ -16,6 +16,7 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as DeliveryRouteImport } from './routes/delivery'
 import { Route as OfferRouteImport } from './routes/offer'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as CatalogIndexRouteImport } from './routes/catalog.index'
 import { Route as CatalogSlugRouteImport } from './routes/catalog.$slug'
@@ -55,6 +56,11 @@ const OfferRoute = OfferRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/delivery': typeof DeliveryRoute
   '/offer': typeof OfferRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/catalog/$slug': typeof CatalogSlugRoute
   '/catalog/': typeof CatalogIndexRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/delivery': typeof DeliveryRoute
   '/offer': typeof OfferRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/catalog/$slug': typeof CatalogSlugRoute
   '/catalog': typeof CatalogIndexRoute
   '/admin/orders': typeof AuthenticatedAdminOrdersRoute
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/delivery': typeof DeliveryRoute
   '/offer': typeof OfferRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/catalog/$slug': typeof CatalogSlugRoute
   '/catalog/': typeof CatalogIndexRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/delivery'
     | '/offer'
     | '/privacy'
+    | '/reset-password'
     | '/admin'
     | '/catalog/$slug'
     | '/catalog/'
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/delivery'
     | '/offer'
     | '/privacy'
+    | '/reset-password'
     | '/catalog/$slug'
     | '/catalog'
     | '/admin/orders'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '/delivery'
     | '/offer'
     | '/privacy'
+    | '/reset-password'
     | '/_authenticated/admin'
     | '/catalog/$slug'
     | '/catalog/'
@@ -186,6 +198,7 @@ export interface RootRouteChildren {
   DeliveryRoute: typeof DeliveryRoute
   OfferRoute: typeof OfferRoute
   PrivacyRoute: typeof PrivacyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   CatalogSlugRoute: typeof CatalogSlugRoute
   CatalogIndexRoute: typeof CatalogIndexRoute
 }
@@ -239,6 +252,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -320,6 +340,7 @@ const rootRouteChildren: RootRouteChildren = {
   DeliveryRoute: DeliveryRoute,
   OfferRoute: OfferRoute,
   PrivacyRoute: PrivacyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   CatalogSlugRoute: CatalogSlugRoute,
   CatalogIndexRoute: CatalogIndexRoute,
 }
