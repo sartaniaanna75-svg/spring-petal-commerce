@@ -155,6 +155,10 @@ export const askFlowerBot = createServerFn({ method: "POST" })
       let total: number | undefined;
       let operator = false;
 
+      const cardsSplit = splitCards(reply);
+      reply = cardsSplit.text;
+      const cards = toChatCards(products, cardsSplit.slugs);
+
       const orderMatch = reply.match(/\[\[ORDER\]\]\s*(\{[\s\S]*\})/);
       const operatorMatch = reply.match(/\[\[OPERATOR\]\]\s*(\{[\s\S]*?\})?/);
       reply = reply
