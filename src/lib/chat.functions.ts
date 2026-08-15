@@ -266,13 +266,22 @@ export const pollChat = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<{ messages: ChatTurn[]; needsOperator: boolean }> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { loadChatHistory } = await import("@/lib/chat.server");
-    const [{ data: rows }, history] = await Promise.all([
+    const { loadChatHistory, loadBotProducts, toChatCards } = await import("@/lib/chat.server");
+    const [{ data: rows }, history, products] = await Promise.all([
       supabaseAdmin.from("chat_sessions").select("needs_operator").eq("id", data.sessionId).limit(1),
       loadChatHistory(data.sessionId, 60),
+      loadBotProducts(),
     ]);
     return {
-      messages: history.map((item) => ({ role: item.role as ChatTurn["role"], content: item.content })),
+      messages: history.map((item) => {
+        const { text, slugs } = splitCards(item.content);
+        const cards = toChatCards(products, slugs);
+        return {
+          role: item.role as ChatTurn["role"],
+          content: text,
+          ...(cards.length > 0 ? { cards } : {}),
+        };
+      }),
       needsOperator: Boolean((rows ?? [])[0]?.needs_operator),
     };
   });
