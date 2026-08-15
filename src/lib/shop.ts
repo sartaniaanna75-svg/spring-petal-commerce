@@ -19,8 +19,10 @@ export type Product = {
   color: string;
   price: number;
   image_url: string;
+  images: string[];
   published: boolean;
   category: ProductCategory;
+  sort_order: number;
 };
 
 export const CATEGORIES: Array<{ value: ProductCategory; label: string; plural: string }> = [
@@ -69,6 +71,14 @@ export function productImage(
     default:
       return pink;
   }
+}
+
+export function productGallery(
+  product: Pick<Product, "image_url" | "color"> &
+    Partial<Pick<Product, "category" | "slug" | "images">>,
+): string[] {
+  const list = (product.images ?? []).filter(Boolean);
+  return list.length > 0 ? list.slice(0, 5) : [productImage(product)];
 }
 
 export function formatPrice(value: number): string {

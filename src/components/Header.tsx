@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Flower2, Menu, ShoppingBag, X } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { supabase } from "@/integrations/supabase/client";
 
 
 const NAV = [
@@ -15,6 +16,21 @@ export function Header() {
   const { count } = useCart();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (active) setSignedIn(Boolean(data.session));
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSignedIn(Boolean(session));
+    });
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -51,6 +67,15 @@ export function Header() {
               {item.label}
             </Link>
           ))}
+          {signedIn && (
+            <Link
+              to="/admin"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+              activeProps={{ className: "text-foreground" }}
+            >
+              Панель управления
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-3">
@@ -96,6 +121,11 @@ export function Header() {
               {item.label}
             </Link>
           ))}
+          {signedIn && (
+            <Link to="/admin" onClick={() => setOpen(false)} className="py-1">
+              Панель управления
+            </Link>
+          )}
           <a href="tel:+74951234567" className="py-1 text-muted-foreground">
             +7 (495) 123-45-67
           </a>

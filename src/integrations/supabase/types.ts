@@ -62,6 +62,7 @@ export type Database = {
       orders: {
         Row: {
           address: string
+          admin_note: string
           comment: string
           created_at: string
           customer_name: string
@@ -76,6 +77,7 @@ export type Database = {
         }
         Insert: {
           address?: string
+          admin_note?: string
           comment?: string
           created_at?: string
           customer_name: string
@@ -90,6 +92,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          admin_note?: string
           comment?: string
           created_at?: string
           customer_name?: string
@@ -113,9 +116,11 @@ export type Database = {
           description: string
           id: string
           image_url: string
+          images: Json
           price: number
           published: boolean
           slug: string
+          sort_order: number
           stems: number
           title: string
           updated_at: string
@@ -128,9 +133,11 @@ export type Database = {
           description?: string
           id?: string
           image_url?: string
+          images?: Json
           price?: number
           published?: boolean
           slug: string
+          sort_order?: number
           stems?: number
           title: string
           updated_at?: string
@@ -143,9 +150,11 @@ export type Database = {
           description?: string
           id?: string
           image_url?: string
+          images?: Json
           price?: number
           published?: boolean
           slug?: string
+          sort_order?: number
           stems?: number
           title?: string
           updated_at?: string

@@ -57,6 +57,13 @@ function AdminLayout() {
               activeProps={{ className: "text-primary" }}
               className="text-muted-foreground hover:text-foreground"
             >
+              Сводка
+            </Link>
+            <Link
+              to="/admin/orders"
+              activeProps={{ className: "text-primary" }}
+              className="text-muted-foreground hover:text-foreground"
+            >
               Заявки
             </Link>
             <Link

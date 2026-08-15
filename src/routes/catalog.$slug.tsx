@@ -3,7 +3,7 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { getProduct, listProducts } from "@/lib/shop.functions";
-import { formatPrice, productImage } from "@/lib/shop";
+import { formatPrice, productGallery } from "@/lib/shop";
 import { useCart } from "@/lib/cart";
 import { ProductCard } from "@/components/ProductCard";
 
@@ -56,6 +56,7 @@ function ProductPage() {
   const { data: products } = useSuspenseQuery(productsQuery);
   const { add } = useCart();
   const [qty, setQty] = useState(1);
+  const [photo, setPhoto] = useState(0);
 
   if (!product) return null;
 
@@ -75,14 +76,33 @@ function ProductPage() {
       </nav>
 
       <div className="mt-8 grid gap-12 md:grid-cols-2">
-        <div className="overflow-hidden rounded-[2.5rem] bg-cream petal-edge">
-          <img
-            src={productImage(product)}
-            alt={`Букет «${product.title}» из ${product.stems} тюльпанов`}
-            width={1024}
-            height={1280}
-            className="aspect-[4/5] w-full object-cover"
-          />
+        <div>
+          <div className="overflow-hidden rounded-[2.5rem] bg-cream petal-edge">
+            <img
+              src={productGallery(product)[Math.min(photo, productGallery(product).length - 1)]}
+              alt={`Букет «${product.title}» из ${product.stems} тюльпанов`}
+              width={1024}
+              height={1280}
+              className="aspect-[4/5] w-full object-cover"
+            />
+          </div>
+          {productGallery(product).length > 1 && (
+            <div className="mt-4 flex flex-wrap gap-3">
+              {productGallery(product).map((url, index) => (
+                <button
+                  key={url}
+                  type="button"
+                  onClick={() => setPhoto(index)}
+                  className={`overflow-hidden rounded-2xl border-2 ${
+                    index === photo ? "border-primary" : "border-transparent"
+                  }`}
+                  aria-label={`Фото ${index + 1}`}
+                >
+                  <img src={url} alt="" className="h-20 w-20 object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
