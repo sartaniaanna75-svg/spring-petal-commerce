@@ -4,8 +4,49 @@ import { useServerFn } from "@tanstack/react-start";
 import { MessageCircleHeart, Send, X, Loader2, LifeBuoy } from "lucide-react";
 import { toast } from "sonner";
 import { askFlowerBot, pollChat, requestOperator, startChatSession } from "@/lib/chat.functions";
+import type { ChatCard } from "@/lib/chat-cards";
+import { useCart } from "@/lib/cart";
+import { formatPrice, productImage } from "@/lib/shop";
 
-type Message = { role: "user" | "assistant" | "operator"; content: string };
+type Message = { role: "user" | "assistant" | "operator"; content: string; cards?: ChatCard[] };
+
+/** Карточки товаров, которые бот показывает прямо в переписке. */
+function ChatCards({ cards, onClose }: { cards: ChatCard[]; onClose: () => void }) {
+  const { add } = useCart();
+  return (
+    <div className="mt-2 grid grid-cols-2 gap-2">
+      {cards.map((card) => (
+        <div
+          key={card.slug}
+          className="overflow-hidden rounded-2xl border border-border/70 bg-background"
+        >
+          <Link to="/catalog/$slug" params={{ slug: card.slug }} onClick={onClose}>
+            <img
+              src={productImage(card)}
+              alt={card.title}
+              loading="lazy"
+              className="h-24 w-full object-cover"
+            />
+          </Link>
+          <div className="space-y-1 p-2">
+            <p className="line-clamp-2 text-xs leading-snug">{card.title}</p>
+            <p className="text-xs text-muted-foreground">{formatPrice(card.price)}</p>
+            <button
+              type="button"
+              onClick={() => {
+                add({ productId: card.id, slug: card.slug, title: card.title, price: card.price }, 1);
+                toast.success(`«${card.title}» в корзине`);
+              }}
+              className="w-full rounded-full bg-primary/10 py-1 text-[11px] text-primary transition-colors hover:bg-primary/20"
+            >
+              В корзину
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const STORAGE_KEY = "tulip-bot-lead-v2";
 
@@ -51,7 +92,7 @@ export function ChatWidget() {
       const result = await poll({ data: { sessionId: lead.sessionId } });
       setOperatorMode(result.needsOperator);
       if (result.messages.length > 0) {
-        setMessages([{ role: "assistant", content: GREETING }, ...result.messages]);
+        setMessages([{ role: "assistant", content: GREETING }, ...(result.messages as Message[])]);
       }
     } catch {
       /* ignore */
@@ -95,7 +136,10 @@ export function ChatWidget() {
     setLoading(true);
     try {
       const result = await ask({ data: { sessionId: lead.sessionId, message: text } });
-      setMessages((prev) => [...prev, { role: "assistant", content: result.reply }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: result.reply, ...(result.cards ? { cards: result.cards } : {}) },
+      ]);
       if (result.orderNo) toast.success(`Заявка №${result.orderNo} оформлена`);
       if (result.operator) setOperatorMode(true);
     } catch (error) {
@@ -196,6 +240,9 @@ export function ChatWidget() {
                       <span className="mb-1 block text-[11px] text-primary">Флорист магазина</span>
                     )}
                     {message.content}
+                    {message.cards && message.cards.length > 0 && (
+                      <ChatCards cards={message.cards} onClose={() => setOpen(false)} />
+                    )}
                   </div>
                 ))}
                 {loading && (
