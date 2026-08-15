@@ -73,6 +73,13 @@ function AdminLayout() {
             >
               Товары
             </Link>
+            <Link
+              to="/admin/chats"
+              activeProps={{ className: "text-primary" }}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Чаты
+            </Link>
           </nav>
           <button
             type="button"
